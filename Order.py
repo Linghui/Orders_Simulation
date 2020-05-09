@@ -14,6 +14,7 @@ STATUS_WASTE = -1
 
 logger = logging.getLogger('main.order')
 
+
 class Order(object):
     def __init__(self, order_obj):
         self.id = order_obj['id']
@@ -26,7 +27,9 @@ class Order(object):
         self.status = STATUS_WAITING
         # this is not beautiful design, but work for now
         self.delivered_timestamp = 0
-        self.shelf = False
+        self.shelf = None
+        self.courier = None
+        self.comment = None
         return
 
     def put_on(self, shelf):
@@ -45,7 +48,7 @@ class Order(object):
 
     def is_deliverable(self):
         current = math.floor(time.time())
-        if self.status == STATUS_ASSIGNED:
+        if self.status == STATUS_ASSIGNED and self.courier != None:
             is_deliverable = True if (
                 current - self.timestamp) >= self.courier.deliver_in else False
             return is_deliverable
@@ -53,22 +56,25 @@ class Order(object):
         return False
 
     def assign_courier(self, courier):
-        logger.info("assign_courier %s %s" % (self.id, courier.id))
         if self.status == STATUS_WAITING:
+            logger.info("assign_courier %s courier %s" % (self.id, courier.id))
             self.status = STATUS_ASSIGNED
             self.courier = courier
 
     def deliver(self):
         if self.is_deliverable():
             logger.info("order delivered %s value:%f courier %s is free" %
-                  (self.id, self.value(), self.courier.id))
+                        (self.id, self.value(), self.courier.id))
             self.delivered_timestamp = math.floor(
                 time.time())  # mark the deliver time
             self.status = STATUS_DELIVERED
 
     # mark order as waste
-    def waste(self):
+    def waste(self, reason):
         self.status = STATUS_WASTE
+        self.comment = reason
+        logger.warning("order delivered %s wasted for %s" %
+                       (self.id, reason))
 
     # for sort
     def __lt__(self, other):
@@ -79,5 +85,4 @@ class Order(object):
 
     # for debug
     def __str__(self):
-        current = math.floor(time.time())
-        return "id:%s name:%s shelf_decay_modifier:%s temp:%s" % (self.id, self.name, self.shelf_decay_modifier, self.temp)
+        return "id:%s name:%s shelf_decay_modifier:%s temp:%s %s" % (self.id, self.name, self.shelf_decay_modifier, self.temp, self.is_deliverable())
