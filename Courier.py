@@ -22,7 +22,7 @@ class Courier(object):
 
     # once courier assign on order , random 2-6s to pick it up
     def assign_order(self, order):
-        if self.status == STATUS_READY:
+        if self.status == STATUS_READY and order != None:
 
             self.order = order
             self.status = STATUS_ASSIGNED
@@ -48,7 +48,7 @@ class Courier(object):
             return True
         return False
 
-    def ready_for_assign(self):
+    def is_ready_for_assign(self):
         return self.status == STATUS_READY
 
     def reset_to_ready(self):

@@ -30,6 +30,7 @@ class Order(object):
         self.shelf = None
         self.courier = None
         self.comment = None
+        self.shelf_decay_modifier = 0
         return
 
     def put_on(self, shelf):
@@ -46,20 +47,23 @@ class Order(object):
     def is_waiting(self):
         return self.status == STATUS_WAITING
 
+    def assign_courier(self, courier):
+        if self.status == STATUS_WAITING and courier != None:
+            logger.info("assign_courier %s courier %s" % (self.id, courier.id))
+            self.status = STATUS_ASSIGNED
+            self.courier = courier
+            return True
+        return False
+
     def is_deliverable(self):
-        current = math.floor(time.time())
+
         if self.status == STATUS_ASSIGNED and self.courier != None:
+            current = math.floor(time.time())
             is_deliverable = True if (
                 current - self.timestamp) >= self.courier.deliver_in else False
             return is_deliverable
 
         return False
-
-    def assign_courier(self, courier):
-        if self.status == STATUS_WAITING:
-            logger.info("assign_courier %s courier %s" % (self.id, courier.id))
-            self.status = STATUS_ASSIGNED
-            self.courier = courier
 
     def deliver(self):
         if self.is_deliverable():
@@ -68,20 +72,26 @@ class Order(object):
             self.delivered_timestamp = math.floor(
                 time.time())  # mark the deliver time
             self.status = STATUS_DELIVERED
+            return True
+        return False
 
     # mark order as waste
     def waste(self, reason):
         self.status = STATUS_WASTE
         self.comment = reason
-        logger.warning("order delivered %s wasted for %s" %
+        logger.warning("order %s wasted for reason %s" %
                        (self.id, reason))
 
     # for sort
     def __lt__(self, other):
-        return self.value() < other.value()
+        if other != None:
+            return self.value() < other.value()
+        return False
 
     def __eq__(self, other):
-        return self.value() == other.value()
+        if other != None:
+            return self.value() == other.value()
+        return False
 
     # for debug
     def __str__(self):
