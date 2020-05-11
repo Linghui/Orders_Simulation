@@ -1,4 +1,7 @@
 #!/bin/python
+# By Kevin Li
+# At 2020/5/9
+# v 0.1
 
 # class for courier
 
@@ -27,7 +30,7 @@ class Courier(object):
             self.order = order
             self.status = STATUS_ASSIGNED
             self.deliver_in = random.randint(2, 6)
-            logger.info("courier %s assigned order %s, will pickup in %s" % (
+            logger.info("courier %s assigned order %s, will pickup in %s s" % (
                 self.id, order.id, self.deliver_in))
             return True
         return False

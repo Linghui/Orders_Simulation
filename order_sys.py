@@ -1,4 +1,7 @@
 #!/bin/python
+# By Kevin Li
+# At 2020/5/9
+# v 0.1
 
 import sys
 import queue
@@ -62,10 +65,10 @@ class Order_deal_thread (threading.Thread):
         self.name = name
 
     def run(self):
-        root_logger.info("Start")
+        root_logger.info("Deliver Start")
 
         # a better design might be make deliver_order_on_shelf() and put_on_shelf() parallel in different thread
-        # but for time limit and thread safe
+        # but for time limit and thread safe choose simple model as follow
         while deliver_order_on_shelf():
 
             while not order_q.empty():
@@ -74,7 +77,10 @@ class Order_deal_thread (threading.Thread):
 
             time.sleep(1)
 
-        root_logger.info("End")
+        root_logger.info("Deliver End")
+        for wasted_one in wasted_order_list:
+            root_logger.info("Wasted Order %s for %s" %
+                             (wasted_one.id, wasted_one.comment))
 
 
 def usage():
@@ -118,8 +124,11 @@ def put_on_shelf(order):
 
 def clean_buffer_shelf(temp):
     global shelf_container
+    # in case there is still room
     if len(shelf_container[buffer_shelf_name]) < shelf_config[buffer_shelf_name]:
         return
+
+    # try to find an order which temp is not temp-in and put it back to its temp shelf if there is room left
     for order in shelf_container[buffer_shelf_name]:
         if order.temp == temp:
             continue
@@ -131,12 +140,13 @@ def clean_buffer_shelf(temp):
         pass
     pass
 
+    # the whole shelf is full
     # random an order on buffer shelf to waste
     order_to_waste = shelf_container[buffer_shelf_name].pop(
         random.randint(0, shelf_config[buffer_shelf_name] - 1))
 
     # in case the random order is assigned courier, reset the courier
-    # not best solution but workaround for now
+    # not best solution but workaround for now, a better way is find a order with no courier
     if order_to_waste.courier != None:
         order_to_waste.courier.reset_to_ready()
         courier_ready_queue.append(order_to_waste.courier)
@@ -156,6 +166,9 @@ def deliver_order_on_shelf():
 
     order_list_for_sort = []
 
+    # scan all the order on shelf
+    # if it's deliverable, deliver it
+    # if it's already decaied, drop it
     for temp in shelf_container:
         for order in shelf_container[temp]:
             if order.is_deliverable():
@@ -171,8 +184,11 @@ def deliver_order_on_shelf():
                 else:
                     order_list_for_sort.append(order)
 
+    # always pickup the low value to deliver first
     for sorted_order in sorted(order_list_for_sort):
         if sorted_order.is_waiting():
+            # a very simple way to pickup a courier
+            # in real world there are too mayn things need to consider with, like distance
             if len(courier_ready_queue) > 0:
                 courier = courier_ready_queue.pop(0)
                 courier.assign_order(sorted_order)
@@ -250,6 +266,7 @@ counted_in_queue = 0
 
 root_logger.info("total order number %s" % all_to_deliver)
 
+# thread fot deal order
 thread = Order_deal_thread(1, "Order_deal_thread")
 thread.start()
 
@@ -257,6 +274,7 @@ for one in order_list:
     order = Order(one)
     order_q.put(order)
     counted_in_queue += 1
+    # order speed control
     if counted_in_queue >= order_per_sec:
         counted_in_queue = 0
         time.sleep(1)

@@ -3,6 +3,8 @@ from Order import Order
 from Courier import Courier
 import time
 
+# test cases
+# no cases for order_sys.py for now
 
 class MyTest(unittest.TestCase):
     def test_order(self):
@@ -55,9 +57,12 @@ class MyTest(unittest.TestCase):
         print("test_courier start")
         courier = Courier(1, "runner")
 
+        # init as ready for assign
         self.assertTrue(courier.is_ready_for_assign())
+        # invalid order can not be assign
         self.assertFalse(courier.assign_order(None))
 
+        # no order assigned , no dealing with
         self.assertFalse(courier.pickup_order())
         self.assertFalse(courier.deliver_order())
 
@@ -77,6 +82,7 @@ class MyTest(unittest.TestCase):
         order = Order(order_obj)
         order.put_on('cold')
 
+        # devlier flow testing
         courier = Courier(2, "fast runner")
         self.assertEqual(1, courier.status)  # status ready
 

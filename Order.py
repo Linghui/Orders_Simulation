@@ -1,4 +1,7 @@
 #!/bin/python
+# By Kevin Li
+# At 2020/5/9
+# v 0.1
 
 import time
 import math
